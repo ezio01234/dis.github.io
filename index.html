@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Market App</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+
+        h2 {
+            text-align: center;
+            color: #2c3e50;
+        }
+
+        /* Layout */
+        #chart-container {
+            width: 60%;
+            float: left;
+            height: 600px;
+            margin: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            background-color: white;
+        }
+
+        #stock-list {
+            width: 35%;
+            float: right;
+            height: 600px;
+            background-color: #ffffff;
+            color: black;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            margin: 10px;
+        }
+
+        #event-section, #notification-section {
+            clear: both;
+            padding: 20px;
+            margin-top: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #2980b9;
+            color: white;
+        }
+
+        input[type="date"], input[type="email"], input[type="password"], input[type="text"] {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-top: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            background-color: #2980b9;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        button:hover {
+            background-color: #3498db;
+        }
+
+        #notifications {
+            background-color: #ecf0f1;
+            padding: 10px;
+            height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .message {
+            padding: 5px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        /* Responsive Design */
+        @media screen and (max-width: 768px) {
+            #chart-container, #stock-list {
+                width: 100%;
+                float: none;
+                margin: 0;
+            }
+
+            #notification-section {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="header">
+        <h1>Stock Market App</h1>
+    </div>
+
+    <!-- Stock Market Chart -->
+    <div id="chart-container">
+        <h2>Stock Market Chart</h2>
+        <iframe frameborder="0" scrolling="no" src="https://tvc4.forexpros.com/init.php?family_prefix=tvc4&pair_ID=17940&interval=60&width=1150&height=650&lang_ID=1&timezone_ID=20" 
+            style="background-color: white; border: solid 1px transparent; color: black;" height="550" width="100%">
+        </iframe>
+    </div>
+
+    <!-- Stock List -->
+    <div id="stock-list">
+        <h2>Stock List</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Stock Name</th>
+                    <th>High Level</th>
+                    <th>Low Level</th>
+                </tr>
+            </thead>
+            <tbody id="stock-data">
+                <!-- Dynamic stock data will go here -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Notification Section -->
+    <div id="notification-section">
+        <h2>Live Notifications</h2>
+        <div id="notifications"></div>
+        <input type="text" id="messageInput" placeholder="Type a message..." style="display:none;">
+        <button id="sendButton" style="display:none;">Send</button>
+        <div id="login-section">
+            <input type="email" id="emailInput" placeholder="Your email">
+            <input type="password" id="passwordInput" placeholder="Your password">
+            <button id="loginButton">Login</button>
+        </div>
+    </div>
+
+    <!-- Date of Event Section -->
+    <div id="event-section">
+        <h2>Select a Date to View Events</h2>
+        <input type="date" id="event-date-picker">
+        <p id="event-details">Event details will be shown here...</p>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Import Firebase SDKs
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-analytics.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+        import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+
+        // Your Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDwTHO5iVUFWS03jf0w_D0jePnpuM_Rbp0",
+            authDomain: "algoji-4bc3b.firebaseapp.com",
+            databaseURL: "https://algoji-4bc3b-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "algoji-4bc3b",
+            storageBucket: "algoji-4bc3b.appspot.com",
+            messagingSenderId: "338557274451",
+            appId: "1:338557274451:web:20ae4ffa4e411111df79a6",
+            measurementId: "G-0ZJYHFEKYE"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const auth = getAuth(app);
+        const database = getDatabase(app);
+        const notificationsRef = ref(database, 'notifications');
+
+        // Example stock data
+        const stocks = [
+            { name: 'Apple', high: 180, low: 170 },
+            { name: 'Google', high: 2700, low: 2600 },
+            { name: 'Tesla', high: 800, low: 750 }
+        ];
+
+        // Example event data
+        const events = {
+            "2024-10-01": "Apple Earnings Report",
+            "2024-10-05": "Tesla Product Launch",
+            "2024-10-12": "Google Annual Meeting"
+        };
+
+        // Populate the table with stock data
+        const stockTable = document.getElementById('stock-data');
+        stocks.forEach(stock => {
+            let row = `<tr>
+                        <td>${stock.name}</td>
+                        <td>${stock.high}</td>
+                        <td>${stock.low}</td>
+                       </tr>`;
+            stockTable.innerHTML += row;
+        });
+
+        // Handle date picker change
+        const eventDatePicker = document.getElementById('event-date-picker');
+        const eventDetails = document.getElementById('event-details');
+        eventDatePicker.addEventListener('change', function() {
+            const selectedDate = eventDatePicker.value;
+            if (events[selectedDate]) {
+                eventDetails.textContent = `Event: ${events[selectedDate]}`;
+            } else {
+                eventDetails.textContent = "No events for this date.";
+            }
+        });
+
+        // Login button listener
+        document.getElementById('loginButton').addEventListener('click', function() {
+            const email = document.getElementById('emailInput').value;
+            const password = document.getElementById('passwordInput').value;
+
+            signInWithEmailAndPassword(auth, email, password)
+                .then(() => {
+                    // Show input fields after login
+                    document.getElementById('messageInput').style.display = 'block';
+                    document.getElementById('sendButton').style.display = 'block';
+                    document.getElementById('login-section').style.display = 'none';
+                })
+                .catch((error) => {
+                    alert(error.message);
+                });
+        });
+
+        // Sending a message
+        document.getElementById('sendButton').addEventListener('click', function() {
+            const message = document.getElementById('messageInput').value;
+            if (message) {
+                push(notificationsRef, { text: message });
+                document.getElementById('messageInput').value = ''; // Clear input
+            }
+        });
+
+        // Listen for new notifications
+        onChildAdded(notificationsRef, (data) => {
+            const newMessage = data.val();
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            messageDiv.textContent = newMessage.text;
+            document.getElementById('notifications').appendChild(messageDiv);
+        });
+
+    </script>
+</body>
+</html>
